@@ -83,6 +83,8 @@ class GigaChatConfig(BaseConfig):
         # Instance variables for current request context
         self._current_credentials: Optional[str] = None
         self._current_api_base: Optional[str] = None
+        self._current_scope: Optional[str] = None
+        self._current_auth_url: Optional[str] = None
 
     def get_complete_url(
         self,
@@ -116,11 +118,17 @@ class GigaChatConfig(BaseConfig):
             or get_secret_str("GIGACHAT_CREDENTIALS")
             or get_secret_str("GIGACHAT_API_KEY")
         )
-        access_token = get_access_token(credentials=credentials)
+        access_token = get_access_token(
+            credentials=credentials,
+            scope=optional_params.get("scope") or get_secret_str("GIGACHAT_SCOPE"),
+            auth_url=optional_params.get("auth_url") or get_secret_str("GIGACHAT_AUTH_URL"),
+        )
 
         # Store credentials for image uploads
         self._current_credentials = credentials
         self._current_api_base = api_base
+        self._current_scope = optional_params.get("scope")
+        self._current_auth_url = optional_params.get("auth_url")
 
         headers["Authorization"] = f"Bearer {access_token}"
         headers["Content-Type"] = "application/json"
@@ -273,6 +281,8 @@ class GigaChatConfig(BaseConfig):
                 image_url=image_url,
                 credentials=self._current_credentials,
                 api_base=self._current_api_base,
+                scope=self._current_scope,
+                auth_url=self._current_auth_url,
             )
         except Exception as e:
             verbose_logger.error(f"Failed to upload image: {e}")
